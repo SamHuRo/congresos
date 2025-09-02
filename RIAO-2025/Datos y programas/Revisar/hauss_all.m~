@@ -1,0 +1,139 @@
+
+lambda0   =   1490e-9;
+lambdaRes =   1490e-9 ;
+n0      =   3.5;            % Indice du milieu 
+L       =   2*1.6612e-6;     % Longueur de la cavié
+c       =   3e8;
+n2      =   6e-18;
+
+tauR    =   n0*L/c;         % Temps de parcours par tour
+
+beta    = .8e-2/1e9;
+sigmaN  = -1.35e-21*1e-6;
+sigmaA  = 1.45e-17*1e-4;
+
+hbar    = 6.62606896e-34/(2*pi);
+r       = sqrt(.97);
+
+k       = sqrt(1-r^2);
+taue    = tauR*sqrt(r)/(1-r);
+
+aL      = 730;
+aE       = exp(-aL*L/2);
+
+
+tau0    = tauR*sqrt(aE)/(1-aE);
+
+tau     = 1/(1/taue+1/tau0);
+gamma   = 1/tau;
+
+
+wRes  = 2*pi*c/lambdaRes;
+w0    = 2*pi*c/lambda0;
+
+
+
+T0      =    6e-12;       % Demi-largeur à 1/e de l'impulsion 
+P0      =    .6;        % Puissance d'entrée
+Seff    =    (300e-9)^2;
+wres0   = 2*pi*c/(n0*L);
+
+
+Tmax  = 10*T0;
+N     = 1e6;
+
+t     = linspace(0, Tmax, N);
+
+dt    = Tmax/N;
+
+
+w      = linspace(-pi/dt,pi/dt, N);
+
+
+Sin   = sqrt(P0)*(exp(-(t-Tmax/2).^2/(2*T0^2)));
+
+
+
+%     Sin_w  = fftshift(fft(Sin)); 
+% 
+%     % Chirp
+%     fichirp     = 1e-100*angle(w - dw - 1i*gamma);
+%     Sin_w_chirp = Sin_w.*exp(1i.*fichirp);
+% 
+%     % Impulsion d'entrée en temporel
+%     
+%     %load('aangle');
+%     Sin      = ifft(fftshift(Sin_w_chirp));%.*exp(1i*aangle);
+
+dw    = w0-wRes;
+a     = zeros(1, N);
+a_dot = a;
+t     = a;
+Np    = a;
+Np_dot= a;
+
+% for ii = 1:100
+    
+    
+
+    for k = 1 : N-1
+
+        a02 = n0^2*L*Seff/(c*n2);
+
+
+        Np_dot(k)  = beta/(2*hbar*w0)/tauR^2/Seff^2*abs(a(k)).^4;
+        Np(k+1)    = Np(k) + dt * Np_dot(k);
+
+
+%         a_dot(k) =  1i*dw*a(k) ... 
+%                     - 1*1i*wRes*abs(a(k)).^2/a02*a(k) ...
+%                     - 1*1i*wRes*sigmaN*Np(k)*a(k)/n0 ...
+%                     - gamma*a(k) + sqrt(2/taue)*Sin(k);
+
+    fTPA = beta*L*abs(a(k))^2/(2*tauR^2*Seff); 
+    fFCA = sigmaA*Np(k)*L/(2*tauR);
+
+
+        a_dot(k) =  1i*dw*a(k) ... 
+                    - 0*1i*wRes*n2*abs(a(k)).^2/tauR/Seff*a(k)/n0 ...
+                    - 1*1i*wRes*sigmaN*Np(k)*a(k)/n0 ...
+                    - gamma*a(k) - 0*fTPA*a(k) - 0*fFCA*a(k) + sqrt(2/taue)*Sin(k);
+
+        a(k+1)   = a(k) + dt * a_dot(k);
+
+        t(k+1)   = t(k) + dt;
+
+    end
+    Sout   = -Sin + sqrt(2/taue).*a;
+    figure(3)
+
+plot(...
+        ... %gamma*t, abs(Sin).^2, ...
+    gamma*t, abs(a).^2/tauR/P0); %, gamma*t, abs(Sout).^2);
+% 
+% figure(2)
+% 
+% plot(t, unwrap(angle(a)), t, unwrap(angle(Sin)));
+% 
+    
+    
+% end
+
+sum(abs(a).^2)/sum(abs(Sin).^2)/tauR
+
+
+
+% figure(1)
+% 
+% plot(gamma*t, abs(Sin).^2/P0);
+
+% figure(2)
+% 
+% plot(gamma*t, abs(a).^2/tauR);
+% 
+% 
+% 
+% 
+% figure(4)
+% 
+% plot(gamma*t, unwrap(angle(a)))
